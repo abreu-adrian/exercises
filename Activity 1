@@ -1,0 +1,63 @@
+# Activity 1 #### 
+# Reproduce this plot and statistics for Chao1 and Simpson
+
+###CHAO1
+richness2 %>%
+  shapiro_test(Chao1) #p=0.0000206
+
+richness2 %>% 
+  levene_test(Chao1 ~ Treatment_Group) #p=0.0000385
+
+richness2 %>% 
+  kruskal_test(Chao1 ~ Treatment_Group) #p=0.0149
+
+stat.test_chao1 <- richness2 %>% 
+  dunn_test(Chao1 ~ Treatment_Group) %>%
+  filter(p.adj < 0.05)
+stat.test_chao1 #p=0.00394
+
+stat.test_chao1 <- add_xy_position(stat.test_chao1, x="Treatment_Group")
+fig_shn_trt <- ggboxplot(richness2, x = "Treatment_Group", y = "Chao1", color = "Treatment_Group", fill = "Treatment_Group", alpha = 0.5)+
+  theme_bw() +
+  geom_jitter(aes(color = Treatment_Group), position = position_jitter(0.2),  size = 1.2) +
+  labs(x = "Treatment", y = "Chao1 diversity")+
+  scale_color_manual(name = "Treatment", values = c("#797979","#F16400", "#531B92"))+
+  scale_fill_manual(name = "Treatment", values = c("#797979","#F16400", "#531B92"))+
+  theme(axis.text.x = element_text(size = 12, angle = 0, vjust = 0.5, hjust = 0.5),
+        axis.text.y = element_text(size = 12, angle = 0, vjust = 0.5, hjust = 0.5),
+        axis.title = element_text(size = 16, face = "bold"),
+        legend.position = "none") +
+  stat_pvalue_manual(stat.test_chao1, label = "p.adj.signif", tip.length = 0.01, size = 8)
+fig_shn_trt
+
+###SIMPSON
+richness2 %>%
+  shapiro_test(Simpson) #p=0.377
+
+richness2 %>% 
+  levene_test(Simpson ~ Treatment_Group) #p=0.521
+
+richness2 %>% 
+  kruskal_test(Simpson ~ Treatment_Group) #p=0.0219
+
+stat.test_simpson <- richness2 %>% 
+  dunn_test(Chao1 ~ Treatment_Group) %>%
+  filter(p.adj < 0.05)
+stat.test_simpson #p=0.00394
+
+
+stat.test_simpson <- add_xy_position(stat.test_simpson, x="Treatment_Group")
+stat.test_simpson$y.position <- 1.4
+fig_shn_trt <- ggboxplot(richness2, x = "Treatment_Group", y = "Simpson", color = "Treatment_Group", fill = "Treatment_Group", alpha = 0.5)+
+  coord_cartesian(ylim = c(0, 1.5)) +
+  theme_bw() +
+  geom_jitter(aes(color = Treatment_Group), position = position_jitter(0.2),  size = 1.2) +
+  labs(x = "Treatment", y = "Simpson diversity")+
+  scale_color_manual(name = "Treatment", values = c("#797979","#F16400", "#531B92"))+
+  scale_fill_manual(name = "Treatment", values = c("#797979","#F16400", "#531B92"))+
+  theme(axis.text.x = element_text(size = 12, angle = 0, vjust = 0.5, hjust = 0.5),
+        axis.text.y = element_text(size = 12, angle = 0, vjust = 0.5, hjust = 0.5),
+        axis.title = element_text(size = 16, face = "bold"),
+        legend.position = "none") +
+  stat_pvalue_manual(stat.test_simpson, label = "p.adj.signif", tip.length = 0.01, size = 8)
+fig_shn_trt
