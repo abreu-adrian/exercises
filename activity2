@@ -1,0 +1,52 @@
+# Activity 2: repeat the variance stabilization, plot and PERMANOVA but with sex as the variable of interest.
+
+ps_deseq <- phyloseq_to_deseq2(ps, ~ Sex)
+
+
+ps_deseq = estimateSizeFactors(ps_deseq, geoMeans = apply(counts(ps_deseq), 1, gm_mean))
+vst_blind <- DESeq2::varianceStabilizingTransformation(ps_deseq, blind = TRUE)
+vst_blind_mat <- SummarizedExperiment::assay(vst_blind)
+vst_blind_mat <- t(vst_blind_mat) 
+vst_blind_mat[which(vst_blind_mat < 0)] <- 0 
+dists <- dist(t(assay(ps_deseq)))
+
+
+comm_vst_blind_mat <- vegdist(vst_blind_mat, "bray")
+PCoA_comm_vst_blind_mat <- capscale(comm_vst_blind_mat ~ 1, distance = "bray")
+PCoA_comm_vst_blind_mat$CA$eig[1:3]/sum(PCoA_comm_vst_blind_mat$CA$eig)
+PCoA_scores <- scores(PCoA_comm_vst_blind_mat)$sites
+
+
+row.names(sdf) == row.names(scores(PCoA_comm_vst_blind_mat)$sites)
+sdf$PCoA1 <- scores(PCoA_comm_vst_blind_mat)$sites[,1]
+sdf$PCoA2 <- scores(PCoA_comm_vst_blind_mat)$sites[,2]
+
+
+PCoA <- qplot(PCoA1, PCoA2,
+              size = I(2), fill = Sex, color = Sex, data = (sdf))
+
+fig_pcoa_trt <- PCoA +
+  stat_ellipse(level = 0.95, geom = "polygon", alpha = 1/6, linetype = 2, linewidth = 0.5, 
+               aes(fill = Sex, color = Sex)) +
+  theme_bw() + 
+  labs(title = "Bray-Curtis Dissimilarity",
+       x = paste0("PCoA1 (", round(PCoA_comm_vst_blind_mat$CA$eig[1:1]/sum(PCoA_comm_vst_blind_mat$CA$eig)*100,digits=1), "%)"), 
+       y = paste0("PCoA2 (", round(PCoA_comm_vst_blind_mat$CA$eig[2:1]/sum(PCoA_comm_vst_blind_mat$CA$eig)*100,digits=1), "%)"))+ 
+  theme(legend.title = element_text(colour = "black", size = 9.5, face = "bold"),
+        legend.text = element_text(colour = "black", size = 9.5),
+        legend.position = "right",
+        axis.title = element_text(face = "bold", size = 10, color = "black"),
+        axis.text = element_text(size = 9.5),
+        strip.text.x = element_text(face = "bold"),
+        plot.title = element_text(colour = "black", size = 12, face = "bold", hjust=0.5)) +
+  scale_color_manual(name = "Sex", values = c("#797979","#F16400", "#531B92"))+ # outer shape color
+  scale_fill_manual(name = "Sex", values = c("#797979","#F16400", "#531B92"))  # inside shape color
+fig_pcoa_trt
+
+set.seed(111)
+permanova_treatment = adonis2(comm_vst_blind_mat ~ Sex, sdf, permutations = 999)
+permanova_treatment 
+#         Df SumOfSqs      R2      F Pr(>F)
+#Model     1   0.2046 0.04866 0.7161  0.634
+#Residual 14   4.0006 0.95134              
+#Total    15   4.2052 1.00000    
